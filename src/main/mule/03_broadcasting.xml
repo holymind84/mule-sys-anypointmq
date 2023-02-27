@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	
+	<flow name="get-broadcasting" doc:id="8bd777c3-f84f-426c-b9ae-7640ee5e27e4" >
+		<http:listener doc:name="GET /broadcasting" doc:id="9b45cf86-f09e-42c9-8be5-6228b8643782" config-ref="HTTP_Listener_config" path="/broadcasting"/>
+		<anypoint-mq:publish doc:name="exchange-broad" doc:id="d2104b3a-c5b1-4aa6-b844-e210558191f2" config-ref="Anypoint_MQ_Config_v4" destination="exchange-broad">
+			<anypoint-mq:body ><![CDATA[#[output application/json
+---
+{
+	
+	id: correlationId,
+	messagge: "hello"
+}]]]></anypoint-mq:body>
+		</anypoint-mq:publish>
+		<logger level="INFO" doc:name="Logger" doc:id="7e5dd847-773e-44e8-9750-1b54584fb4d0" message='#["message sent " ++ correlationId]'/>
+		<ee:transform doc:name="Transform Message" doc:id="3ef535e3-424d-4c4f-a5c0-05d2859539a0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: "ok",
+	corr:  correlationId
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="mq-sub-broadcasting-1" doc:id="952c64ff-4a0f-4c10-a372-237bc65ef518" >
+		<anypoint-mq:subscriber doc:name="queue-broad-1" doc:id="1454fd4f-5489-49f0-86d0-1c77de0c5b22" config-ref="Anypoint_MQ_Config_v4" destination="queue-broad-1">
+		</anypoint-mq:subscriber>
+		<logger level="INFO" doc:name="Logger" doc:id="4d5e5fb3-a332-43a2-a352-34bb2c35021e" message='#[output application/json&#10;---&#10;{&#10;	"where" : "mq-sub-broadcasting-1",&#10;	"body" : payload&#10;&#10;}]'/>
+	</flow>
+	
+	
+	<flow name="mq-sub-broadcasting-2" doc:id="5eccab6a-3a04-4e17-b700-36a88e97aa22" >
+		<anypoint-mq:subscriber doc:name="queue-broad-2" doc:id="da7c43de-73a8-4453-8a49-f20e2681bbba" config-ref="Anypoint_MQ_Config_v4" destination="queue-broad-2">
+		</anypoint-mq:subscriber>
+		<logger level="INFO" doc:name="Logger" doc:id="3e71d142-19b4-4263-94d6-70b147a42a6f" message='#[output application/json&#10;---&#10;{&#10;	"where" : "mq-sub-broadcasting-2",&#10;	"body" : payload&#10;}]'/>
+	</flow>
+</mule>
